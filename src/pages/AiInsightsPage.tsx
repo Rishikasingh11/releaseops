@@ -5,6 +5,7 @@ import { OverallReadinessPanel } from "../components/ai/OverallReadinessPanel";
 import { ReleaseRiskCard } from "../components/ai/ReleaseRiskCard";
 import { EntityRiskList, type EntityRiskItem } from "../components/ai/EntityRiskList";
 import { RecommendedActionsPanel } from "../components/ai/RecommendedActionsPanel";
+import { WhatIfSimulator } from "../components/ai/WhatIfSimulator";
 import { useReleaseIntelligence } from "../store/selectors";
 
 export function AiInsightsPage() {
@@ -80,6 +81,10 @@ export function AiInsightsPage() {
       <div className="space-y-6">
         <Reveal index={0}>
           <OverallReadinessPanel intelligence={intelligence} />
+        </Reveal>
+
+        <Reveal index={1}>
+          <WhatIfSimulator />
         </Reveal>
 
         <div>

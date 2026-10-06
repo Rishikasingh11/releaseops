@@ -1,4 +1,5 @@
-import { Rocket, Clock, ShieldAlert, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { Rocket, Clock, ShieldAlert, AlertTriangle, CheckCircle2, Plus } from "lucide-react";
 import { PageHeader } from "../components/common/PageHeader";
 import { MetricCard } from "../components/common/MetricCard";
 import { Reveal } from "../components/common/Reveal";
@@ -8,10 +9,12 @@ import { DeploymentReadinessOverview } from "../components/dashboard/DeploymentR
 import { PendingApprovalsPanel } from "../components/dashboard/PendingApprovalsPanel";
 import { ReleaseHealthPanel } from "../components/dashboard/ReleaseHealthPanel";
 import { RecentActivityPanel } from "../components/dashboard/RecentActivityPanel";
+import { CreateReleaseModal } from "../components/releases/CreateReleaseModal";
 import { useAppStore } from "../store/useAppStore";
 
 export function DashboardPage() {
   const releases = useAppStore((state) => state.releases);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const total = releases.length;
   const inProgress = releases.filter((r) => r.status === "In Progress").length;
@@ -24,6 +27,16 @@ export function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description="High-level overview of release health, upcoming deployments, and key metrics."
+        action={
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white shadow transition-all hover:bg-blue-700 hover:-translate-y-0.5"
+          >
+            <Plus className="h-4 w-4" />
+            New Release
+          </button>
+        }
       />
 
       <Reveal index={0}>
@@ -70,6 +83,8 @@ export function DashboardPage() {
           <RecentActivityPanel />
         </Reveal>
       </div>
+
+      <CreateReleaseModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
     </div>
   );
 }

@@ -123,6 +123,7 @@ export function useReleaseIntelligence(): ReleaseIntelligence[] {
   const approvals = useAppStore((state) => state.approvals);
   const risks = useAppStore((state) => state.risks);
   const kubernetesNodes = useAppStore((state) => state.kubernetesNodes);
+  const freezeWindows = useAppStore((state) => state.freezeWindows);
 
   return useMemo(() => {
     return releases.map((release) => {
@@ -147,6 +148,7 @@ export function useReleaseIntelligence(): ReleaseIntelligence[] {
         scopedJiraIssues,
         scopedDependencies,
         scopedNodes,
+        freezeWindows,
       );
       const risk = getRiskAssessment(
         release,
@@ -155,6 +157,7 @@ export function useReleaseIntelligence(): ReleaseIntelligence[] {
         scopedJiraIssues,
         scopedDependencies,
         scopedNodes,
+        freezeWindows,
       );
       const actions = getRecommendedActions(
         scopedJiraIssues,
@@ -176,5 +179,5 @@ export function useReleaseIntelligence(): ReleaseIntelligence[] {
         actions,
       };
     });
-  }, [releases, jiraIssues, approvals, risks, dependencies, kubernetesNodes]);
+  }, [releases, jiraIssues, approvals, risks, dependencies, kubernetesNodes, freezeWindows]);
 }

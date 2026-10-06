@@ -1,12 +1,14 @@
-import { Calendar as CalendarIcon } from "lucide-react";
-import { PlaceholderPage } from "../components/common/PlaceholderPage";
+import { PageHeader } from "../components/common/PageHeader";
+import { ReleaseCalendar } from "../components/calendar/ReleaseCalendar";
 
 export function CalendarPage() {
   return (
-    <PlaceholderPage
-      title="Calendar"
-      description="Release schedule, freeze windows, and important milestones."
-      icon={CalendarIcon}
-    />
+    <div>
+      <PageHeader
+        title="Release & Deployment Calendar"
+        description="Track release schedule milestones, scheduled maintenance windows, and enterprise change freeze periods."
+      />
+      <ReleaseCalendar />
+    </div>
   );
 }

@@ -2,9 +2,9 @@ import { Menu, Moon, Sun } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationsDropdown } from "./NotificationsDropdown";
+import { PersonaDropdown } from "./PersonaDropdown";
 
 export function Topbar() {
-  const currentUser = useAppStore((state) => state.currentUser);
   const toggleMobileSidebar = useAppStore((state) => state.toggleMobileSidebar);
   const isDarkMode = useAppStore((state) => state.isDarkMode);
   const toggleDarkMode = useAppStore((state) => state.toggleDarkMode);
@@ -34,15 +34,7 @@ export function Topbar() {
           <Moon className={`absolute inset-0 m-2 h-5 w-5 transition-all ${isDarkMode ? "scale-100 rotate-0 opacity-100" : "scale-0 -rotate-90 opacity-0"}`} />
         </button>
         <NotificationsDropdown />
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-            {currentUser.name.charAt(0)}
-          </div>
-          <div className="hidden text-sm sm:block">
-            <p className="font-medium text-slate-900 dark:text-slate-100">{currentUser.name}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{currentUser.role}</p>
-          </div>
-        </div>
+        <PersonaDropdown />
       </div>
     </header>
   );

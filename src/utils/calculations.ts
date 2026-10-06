@@ -1,6 +1,8 @@
 import type {
   Approval,
   Dependency,
+  Environment,
+  FreezeWindow,
   JiraIssue,
   KubernetesNode,
   Release,
@@ -13,6 +15,28 @@ const severityWeight: Record<Risk["severity"], number> = {
   High: 50,
   Critical: 90,
 };
+
+export function isDateInFreezeWindow(date: string | Date, window: FreezeWindow): boolean {
+  if (!window.enforced) return false;
+  const target = new Date(date).getTime();
+  const start = new Date(window.startDate).getTime();
+  // Include the full end date (end of day)
+  const end = new Date(`${window.endDate}T23:59:59.999Z`).getTime();
+  return target >= start && target <= end;
+}
+
+export function getActiveFreezeWindows(
+  windows: FreezeWindow[],
+  environment: Environment,
+  date: string = new Date().toISOString().slice(0, 10),
+): FreezeWindow[] {
+  return windows.filter(
+    (w) =>
+      w.enforced &&
+      (w.environment === "All" || w.environment === environment) &&
+      isDateInFreezeWindow(date, w),
+  );
+}
 
 export function getReleaseProgress(release: Release, issues: JiraIssue[]): number {
   const releaseIssues = issues.filter((issue) =>
@@ -72,9 +96,19 @@ export function getReadinessBreakdown(
   issues: JiraIssue[],
   dependencies: Dependency[],
   nodes: KubernetesNode[],
+  freezeWindows: FreezeWindow[] = [],
 ): ReadinessBreakdown {
   const blockers: string[] = [];
   let score = 100;
+
+  // Check active freeze windows
+  if (freezeWindows.length > 0) {
+    const activeFreeze = getActiveFreezeWindows(freezeWindows, release.environment, release.targetDate);
+    if (activeFreeze.length > 0) {
+      score -= 20;
+      blockers.push(`Deployment freeze in effect (${activeFreeze[0].name})`);
+    }
+  }
 
   const blockedIssues = getBlockedJiraIssues(issues);
   if (blockedIssues.length > 0) {
@@ -171,9 +205,18 @@ export function getRiskAssessment(
   issues: JiraIssue[],
   dependencies: Dependency[],
   nodes: KubernetesNode[],
+  freezeWindows: FreezeWindow[] = [],
 ): RiskAssessment {
   const factors: string[] = [];
   let score = 0;
+
+  if (freezeWindows.length > 0) {
+    const activeFreeze = getActiveFreezeWindows(freezeWindows, release.environment, release.targetDate);
+    if (activeFreeze.length > 0) {
+      score += 25;
+      factors.push(`Active change freeze in effect (${activeFreeze[0].name})`);
+    }
+  }
 
   const blockedIssues = getBlockedJiraIssues(issues);
   if (blockedIssues.length > 0) {
@@ -258,8 +301,18 @@ export function getDeploymentBlockers(
   risks: Risk[],
   issues: JiraIssue[],
   nodes: KubernetesNode[],
+  freezeWindows: FreezeWindow[] = [],
+  environment?: Environment,
+  targetDate?: string,
 ): string[] {
   const blockers: string[] = [];
+
+  if (environment && freezeWindows.length > 0) {
+    const active = getActiveFreezeWindows(freezeWindows, environment, targetDate);
+    if (active.length > 0) {
+      blockers.push(`Deployment freeze in effect (${active.map((w) => w.name).join(", ")})`);
+    }
+  }
 
   const blockedIssues = getBlockedJiraIssues(issues);
   if (blockedIssues.length > 0) {

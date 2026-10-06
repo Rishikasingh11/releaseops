@@ -1,19 +1,13 @@
-import { Sparkles, Rocket, Gauge, Clock3, ShieldAlert } from "lucide-react";
+import { Rocket, Gauge, Clock3, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "../components/common/PageHeader";
 import { MetricCard } from "../components/common/MetricCard";
 import { Card } from "../components/common/Card";
 import { ReleaseHealthPanel } from "../components/dashboard/ReleaseHealthPanel";
 import { ReleasesByEnvironmentChart } from "../components/reports/ReleasesByEnvironmentChart";
+import { DoraMetricsPanel } from "../components/reports/DoraMetricsPanel";
 import { useAppStore } from "../store/useAppStore";
 import { useReleaseIntelligence } from "../store/selectors";
 import { getReleaseProgress } from "../utils/calculations";
-
-const UPCOMING_REPORTS = [
-  "Release velocity trends over time, by team and environment",
-  "Deployment frequency vs. change failure rate (DORA metrics)",
-  "Approval cycle time by gate, with bottleneck detection",
-  "Exportable audit trail for compliance sign-off",
-];
 
 export function ReportsPage() {
   const releases = useAppStore((state) => state.releases);
@@ -41,33 +35,26 @@ export function ReportsPage() {
 
   const openCriticalRisks = risks.filter((r) => r.severity === "Critical" && r.status === "Open").length;
 
+  // Gate bottlenecks analysis
+  const pendingByGate = approvals.reduce((acc, a) => {
+    if (a.status !== "Approved") {
+      acc[a.type] = (acc[a.type] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
-        title="Reports"
-        description="Release velocity, deployment frequency, and quality analytics."
+        title="Engineering Reports & Analytics"
+        description="Comprehensive release velocity, DORA delivery metrics, and governance bottleneck analysis."
       />
 
-      <Card className="relative overflow-hidden border-violet-100 bg-gradient-to-br from-violet-50 via-white to-blue-50">
-        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-violet-100/60 blur-2xl" />
-        <div className="absolute -bottom-10 right-24 h-24 w-24 rounded-full bg-blue-100/60 blur-2xl" />
-        <div className="relative flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-violet-600 text-white">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-violet-700">Full Reports — Coming Soon</p>
-              <p className="text-sm text-slate-600">
-                Trend lines, DORA metrics, and exportable audits are on the way. Until then, here's a
-                live snapshot pulled from your current release data.
-              </p>
-            </div>
-          </div>
-        </div>
-      </Card>
+      {/* DORA Metrics Panel */}
+      <DoraMetricsPanel />
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* High Level Snapshot */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Releases Shipped" value={shipped} icon={Rocket} tone="accent" />
         <MetricCard label="Avg. Release Progress" value={`${avgProgress}%`} icon={Gauge} tone="info" />
         <MetricCard
@@ -85,21 +72,47 @@ export function ReportsPage() {
         />
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ReleasesByEnvironmentChart releases={releases} />
         <ReleaseHealthPanel releases={releases} />
       </div>
 
-      <Card className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-slate-900">What's coming next</h2>
-        <ul className="space-y-2">
-          {UPCOMING_REPORTS.map((item) => (
-            <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
-              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-violet-400" />
-              {item}
-            </li>
+      {/* Gate Bottleneck Breakdown */}
+      <Card>
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+              Governance Gate Bottleneck Detection
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Distribution of pending approvals across active release pipelines
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {Object.entries(pendingByGate).map(([gate, count]) => (
+            <div
+              key={gate}
+              className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800/40"
+            >
+              <div>
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{gate}</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Gate Type</p>
+              </div>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                {count}
+              </span>
+            </div>
           ))}
-        </ul>
+          {Object.keys(pendingByGate).length === 0 && (
+            <div className="col-span-3 flex items-center justify-center py-6 text-xs text-slate-400">
+              <CheckCircle2 className="mr-1.5 h-4 w-4 text-emerald-500" />
+              All governance gates across active releases are approved.
+            </div>
+          )}
+        </div>
       </Card>
     </div>
   );

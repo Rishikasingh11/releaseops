@@ -48,6 +48,7 @@ export function ReleaseDetailPage() {
         nodes={nodes}
         approvals={approvals}
         risks={risks}
+        packages={packages}
       />
 
       <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
