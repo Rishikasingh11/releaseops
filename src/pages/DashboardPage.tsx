@@ -6,6 +6,7 @@ import { Reveal } from "../components/common/Reveal";
 import { CommandCenter } from "../components/dashboard/CommandCenter";
 import { RecentReleasesTable } from "../components/dashboard/RecentReleasesTable";
 import { DeploymentReadinessOverview } from "../components/dashboard/DeploymentReadinessOverview";
+import { DashboardProductionAlignmentSection } from "../components/dashboard/DashboardProductionAlignmentSection";
 import { PendingApprovalsPanel } from "../components/dashboard/PendingApprovalsPanel";
 import { ReleaseHealthPanel } from "../components/dashboard/ReleaseHealthPanel";
 import { RecentActivityPanel } from "../components/dashboard/RecentActivityPanel";
@@ -66,20 +67,24 @@ export function DashboardPage() {
         <RecentReleasesTable releases={releases} />
       </Reveal>
 
+      <Reveal index={7} className="mt-6">
+        <DashboardProductionAlignmentSection />
+      </Reveal>
+
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Reveal index={7}>
+        <Reveal index={8}>
           <DeploymentReadinessOverview releases={releases} />
         </Reveal>
-        <Reveal index={8}>
+        <Reveal index={9}>
           <ReleaseHealthPanel releases={releases} />
         </Reveal>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Reveal index={9}>
+        <Reveal index={10}>
           <PendingApprovalsPanel />
         </Reveal>
-        <Reveal index={10}>
+        <Reveal index={11}>
           <RecentActivityPanel />
         </Reveal>
       </div>

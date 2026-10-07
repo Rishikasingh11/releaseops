@@ -22,6 +22,7 @@ export const releases: Release[] = [
     clusterIds: ["CLU-01", "CLU-02"],
     aiSummary:
       "Progress is steady but two open risks threaten the target date: PSP sandbox certification and an unresolved currency rounding bug. Recommend prioritizing PAY-203 this sprint.",
+    repositoryIds: ["payment-service"],
   },
   {
     id: "REL-1002",
@@ -44,6 +45,7 @@ export const releases: Release[] = [
     clusterIds: ["CLU-03"],
     aiSummary:
       "All engineering work is complete and low risk. Approval chain is progressing normally; Change Advisory sign-off is the next gate.",
+    repositoryIds: ["customer-service"],
   },
   {
     id: "REL-1003",
@@ -66,6 +68,7 @@ export const releases: Release[] = [
     clusterIds: ["CLU-01"],
     aiSummary:
       "Fully tested and approved end-to-end. Only the final deployment approval remains before this release can go live.",
+    repositoryIds: ["trade-service"],
   },
   {
     id: "REL-1004",
@@ -88,6 +91,7 @@ export const releases: Release[] = [
     clusterIds: ["CLU-01", "CLU-02"],
     aiSummary:
       "Deployed cleanly with no open risks. SMS delivery metrics are being monitored for the first 48 hours post-launch.",
+    repositoryIds: ["notification-service"],
   },
   {
     id: "REL-1005",
@@ -110,6 +114,7 @@ export const releases: Release[] = [
     clusterIds: ["CLU-01"],
     aiSummary:
       "Sunset completed without incident. No further action required; release archived for audit purposes.",
+    repositoryIds: ["reporting-service"],
   },
   {
     id: "REL-1006",
@@ -132,5 +137,6 @@ export const releases: Release[] = [
     clusterIds: ["CLU-01", "CLU-04"],
     aiSummary:
       "A critical session-store bug is causing logout loops in staging and Security has requested more information. Recommend holding rollout until the refresh token issue is resolved.",
+    repositoryIds: ["authentication-service"],
   },
 ];

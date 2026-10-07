@@ -10,5 +10,9 @@ export const ROUTES = {
   reports: "/reports",
   calendar: "/calendar",
   aiInsights: "/ai-insights",
+  productionAlignment: "/production-alignment",
+  productionAlignmentDetail: "/production-alignment/:repositoryId",
+  productionAlignmentDetailPath: (repositoryId: string) =>
+    `/production-alignment/${repositoryId}`,
   settings: "/settings",
 } as const;

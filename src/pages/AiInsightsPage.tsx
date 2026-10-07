@@ -1,10 +1,11 @@
-import { GitBranch, Boxes, ShieldAlert, Link2 } from "lucide-react";
+import { GitBranch, Boxes, ShieldAlert, Link2, GitCompare } from "lucide-react";
 import { PageHeader } from "../components/common/PageHeader";
 import { Reveal } from "../components/common/Reveal";
 import { OverallReadinessPanel } from "../components/ai/OverallReadinessPanel";
 import { ReleaseRiskCard } from "../components/ai/ReleaseRiskCard";
 import { EntityRiskList, type EntityRiskItem } from "../components/ai/EntityRiskList";
 import { RecommendedActionsPanel } from "../components/ai/RecommendedActionsPanel";
+import { ProductionAlignmentAiPanel } from "../components/ai/ProductionAlignmentAiPanel";
 import { WhatIfSimulator } from "../components/ai/WhatIfSimulator";
 import { useReleaseIntelligence } from "../store/selectors";
 
@@ -71,11 +72,23 @@ export function AiInsightsPage() {
       })),
   );
 
+  const alignmentItems: EntityRiskItem[] = active.flatMap((i) =>
+    i.alignments
+      .filter((repo) => repo.alignmentStatus !== "ALIGNED")
+      .map((repo) => ({
+        key: `${i.release.id}-repo-${repo.repositoryId}`,
+        label: `${repo.repositoryName}: ${repo.alignmentStatus}`,
+        detail: `${repo.commitsAheadReleaseVsProd > 0 ? `+${repo.commitsAheadReleaseVsProd} commits ahead` : repo.explanation}`,
+        releaseId: i.release.id,
+        releaseName: i.release.name,
+      })),
+  );
+
   return (
     <div>
       <PageHeader
         title="AI Release Intelligence Center"
-        description="Deterministic, rule-based analysis of every active release — every insight traces back to real Jira, Kubernetes, approval, and dependency data."
+        description="Deterministic, rule-based analysis of every active release — every insight traces back to real Jira, Kubernetes, approval, dependency, and repository alignment data."
       />
 
       <div className="space-y-6">
@@ -87,11 +100,16 @@ export function AiInsightsPage() {
           <WhatIfSimulator />
         </Reveal>
 
+        {/* Dedicated Production Alignment AI Intelligence */}
+        <Reveal index={2}>
+          <ProductionAlignmentAiPanel />
+        </Reveal>
+
         <div>
           <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Release Risk Scores</h2>
           <div className="space-y-4">
             {rankedByRisk.map((item, index) => (
-              <Reveal key={item.release.id} index={index + 1}>
+              <Reveal key={item.release.id} index={index + 3}>
                 <ReleaseRiskCard intelligence={item} />
               </Reveal>
             ))}
@@ -107,6 +125,12 @@ export function AiInsightsPage() {
             icon={ShieldAlert}
             items={blockerItems}
             emptyMessage="No blocked Jira issues or critical nodes across active releases."
+          />
+          <EntityRiskList
+            title="Production Alignment Risk"
+            icon={GitCompare}
+            items={alignmentItems}
+            emptyMessage="All active release repositories are fully aligned with live Production."
           />
           <EntityRiskList
             title="Dependency Risk"

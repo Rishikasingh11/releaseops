@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Rocket,
+  GitCompare,
   Ticket,
   Boxes,
   Mail,
@@ -16,6 +17,7 @@ import { ROUTES } from "./paths";
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", path: ROUTES.dashboard, icon: LayoutDashboard },
   { label: "Releases", path: ROUTES.releases, icon: Rocket },
+  { label: "Production Alignment", path: ROUTES.productionAlignment, icon: GitCompare },
   { label: "Jira", path: ROUTES.jira, icon: Ticket },
   { label: "Mirantis Kubernetes", path: ROUTES.kubernetes, icon: Boxes },
   { label: "Mails", path: ROUTES.mails, icon: Mail },

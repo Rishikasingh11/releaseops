@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FileText } from "lucide-react";
-import type { Approval, JiraIssue, KubernetesNode, Release, ReleasePackage, Risk } from "../../types";
+import type { Approval, JiraIssue, KubernetesNode, Release, ReleasePackage, Risk, ProductionRepositoryAlignment } from "../../types";
 import { Badge } from "../common/Badge";
 import { releaseStatusStyles, urgentReleaseStatuses } from "../../utils/statusStyles";
 import { formatDate } from "../../utils/format";
@@ -15,6 +15,7 @@ interface ReleaseHeaderProps {
   approvals: Approval[];
   risks: Risk[];
   packages?: ReleasePackage[];
+  alignments?: ProductionRepositoryAlignment[];
 }
 
 export function ReleaseHeader({
@@ -24,9 +25,10 @@ export function ReleaseHeader({
   approvals,
   risks,
   packages = [],
+  alignments = [],
 }: ReleaseHeaderProps) {
   const [isBriefingOpen, setIsBriefingOpen] = useState(false);
-  const readiness = getReadinessBreakdown(release, approvals, risks, jiraIssues, [], nodes);
+  const readiness = getReadinessBreakdown(release, approvals, risks, jiraIssues, [], nodes, [], alignments);
 
   return (
     <div className="mb-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-800">
@@ -76,6 +78,7 @@ export function ReleaseHeader({
         risks={risks}
         nodes={nodes}
         readinessScore={readiness.score}
+        alignments={alignments}
       />
     </div>
   );

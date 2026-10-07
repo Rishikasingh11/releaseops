@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Command, CornerDownLeft, Rocket, Ticket, type LucideIcon } from "lucide-react";
+import { Command, CornerDownLeft, Rocket, Ticket, GitBranch, type LucideIcon } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { useCommandPaletteStore } from "../../store/useCommandPaletteStore";
 import { NAV_ITEMS } from "../../routes/navConfig";
@@ -11,13 +11,14 @@ interface PaletteItem {
   icon: LucideIcon;
   label: string;
   detail?: string;
-  group: "Pages" | "Releases" | "Jira Issues";
+  group: "Pages" | "Releases" | "Jira Issues" | "Repositories";
   onSelect: () => void;
 }
 
 export function CommandPalette() {
   const releases = useAppStore((state) => state.releases);
   const jiraIssues = useAppStore((state) => state.jiraIssues);
+  const productionAlignments = useAppStore((state) => state.productionAlignments);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -103,8 +104,26 @@ export function CommandPalette() {
         };
       });
 
-    return [...releaseItems, ...issueItems, ...pageItems];
-  }, [query, releases, jiraIssues, navigate]);
+    const repoItems: PaletteItem[] = productionAlignments
+      .filter(
+        (repo) =>
+          repo.repositoryName.toLowerCase().includes(trimmed) ||
+          repo.applicationName.toLowerCase().includes(trimmed) ||
+          repo.productionVersion.toLowerCase().includes(trimmed),
+      )
+      .slice(0, 5)
+      .map((repo) => ({
+        key: `repo-${repo.repositoryId}`,
+        icon: GitBranch,
+        label: repo.repositoryName,
+        detail: `${repo.applicationName} · ${repo.alignmentStatus} (${repo.productionVersion})`,
+        group: "Repositories" as const,
+        onSelect: () =>
+          navigate(ROUTES.productionAlignmentDetailPath(repo.repositoryId)),
+      }));
+
+    return [...repoItems, ...releaseItems, ...issueItems, ...pageItems];
+  }, [query, releases, jiraIssues, productionAlignments, navigate]);
 
   useEffect(() => {
     setHighlightedIndex(0);
@@ -117,7 +136,12 @@ export function CommandPalette() {
 
   if (!isOpen) return null;
 
-  const groups: PaletteItem["group"][] = ["Releases", "Jira Issues", "Pages"];
+  const groups: PaletteItem["group"][] = [
+    "Repositories",
+    "Releases",
+    "Jira Issues",
+    "Pages",
+  ];
 
   return (
     <div

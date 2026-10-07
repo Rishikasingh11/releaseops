@@ -11,6 +11,8 @@ import { ApprovalsPage } from "./pages/ApprovalsPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { AiInsightsPage } from "./pages/AiInsightsPage";
+import { ProductionAlignmentPage } from "./pages/ProductionAlignmentPage";
+import { ProductionAlignmentDetailPage } from "./pages/ProductionAlignmentDetailPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ROUTES } from "./routes/paths";
@@ -40,6 +42,11 @@ function App() {
           <Route path={ROUTES.reports} element={<ReportsPage />} />
           <Route path={ROUTES.calendar} element={<CalendarPage />} />
           <Route path={ROUTES.aiInsights} element={<AiInsightsPage />} />
+          <Route path={ROUTES.productionAlignment} element={<ProductionAlignmentPage />} />
+          <Route
+            path={ROUTES.productionAlignmentDetail}
+            element={<ProductionAlignmentDetailPage />}
+          />
           <Route path={ROUTES.settings} element={<SettingsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

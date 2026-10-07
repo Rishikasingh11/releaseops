@@ -1,9 +1,18 @@
 import { useState } from "react";
 import { Sparkles, RefreshCw } from "lucide-react";
-import type { Approval, Dependency, JiraIssue, KubernetesNode, Release, Risk } from "../../types";
+import type {
+  Approval,
+  Dependency,
+  JiraIssue,
+  KubernetesNode,
+  Release,
+  Risk,
+  ProductionRepositoryAlignment,
+} from "../../types";
 import { Card } from "../common/Card";
 import { getReadinessBreakdown, getRiskAssessment } from "../../utils/calculations";
 import { generateReleaseSummary, getRecommendedActions } from "../../utils/aiInsights";
+import { useAppStore } from "../../store/useAppStore";
 
 interface ReleaseAiSummaryCardProps {
   release: Release;
@@ -12,6 +21,7 @@ interface ReleaseAiSummaryCardProps {
   risks: Risk[];
   dependencies: Dependency[];
   nodes: KubernetesNode[];
+  alignments?: ProductionRepositoryAlignment[];
 }
 
 export function ReleaseAiSummaryCard({
@@ -21,10 +31,29 @@ export function ReleaseAiSummaryCard({
   risks,
   dependencies,
   nodes,
+  alignments,
 }: ReleaseAiSummaryCardProps) {
-  const readiness = getReadinessBreakdown(release, approvals, risks, jiraIssues, dependencies, nodes);
+  const storeAlignments = useAppStore((state) => state.productionAlignments);
+  const scopedAlignments =
+    alignments ??
+    storeAlignments.filter(
+      (r) =>
+        (release.repositoryIds && release.repositoryIds.includes(r.repositoryId)) ||
+        r.releaseId === release.id,
+    );
+
+  const readiness = getReadinessBreakdown(
+    release,
+    approvals,
+    risks,
+    jiraIssues,
+    dependencies,
+    nodes,
+    [],
+    scopedAlignments,
+  );
   const risk = getRiskAssessment(release, approvals, risks, jiraIssues, dependencies, nodes);
-  const actions = getRecommendedActions(jiraIssues, nodes, approvals, dependencies, risks);
+  const actions = getRecommendedActions(jiraIssues, nodes, approvals, dependencies, risks, scopedAlignments);
 
   // A signature of every input that can change the generated text — not
   // just the readiness score, which can round to the same value (e.g. 0%)
@@ -37,7 +66,17 @@ export function ReleaseAiSummaryCard({
   const isStale = summary !== null && generatedForSignature !== dataSignature;
 
   const handleGenerate = () => {
-    setSummary(generateReleaseSummary(release, readiness, jiraIssues, approvals, nodes, actions));
+    setSummary(
+      generateReleaseSummary(
+        release,
+        readiness,
+        jiraIssues,
+        approvals,
+        nodes,
+        actions,
+        scopedAlignments,
+      ),
+    );
     setGeneratedForSignature(dataSignature);
   };
 

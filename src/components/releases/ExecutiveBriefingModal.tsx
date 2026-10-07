@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, Copy, FileText, X } from "lucide-react";
-import type { Approval, JiraIssue, KubernetesNode, Release, ReleasePackage, Risk } from "../../types";
+import type { Approval, JiraIssue, KubernetesNode, Release, ReleasePackage, Risk, ProductionRepositoryAlignment } from "../../types";
 import { useToastStore } from "../../store/useToastStore";
 
 interface ExecutiveBriefingModalProps {
@@ -13,6 +13,7 @@ interface ExecutiveBriefingModalProps {
   risks: Risk[];
   nodes: KubernetesNode[];
   readinessScore: number;
+  alignments?: ProductionRepositoryAlignment[];
 }
 
 export function ExecutiveBriefingModal({
@@ -25,6 +26,7 @@ export function ExecutiveBriefingModal({
   risks,
   nodes,
   readinessScore,
+  alignments = [],
 }: ExecutiveBriefingModalProps) {
   const showToast = useToastStore((state) => state.showToast);
   const [copied, setCopied] = useState(false);
@@ -50,6 +52,31 @@ ${release.description}
 - **Overall Health:** ${readinessScore >= 80 ? "🟢 READY FOR DEPLOYMENT" : readinessScore >= 50 ? "🟡 AT RISK / ATTENTION NEEDED" : "🔴 DEPLOYMENT BLOCKED"}
 - **Governance Sign-offs:** ${approvedCount} of ${approvals.length} gates approved.
 - **Infrastructure Status:** ${unhealthyNodes.length === 0 ? "All assigned cluster nodes healthy" : `⚠️ ${unhealthyNodes.length} node(s) unhealthy`}
+${
+  alignments.length > 0
+    ? `- **Production Alignment:** ${
+        alignments.some((r) => r.alignmentStatus === "DIVERGED")
+          ? "🔴 Critical Divergence Detected"
+          : alignments.some((r) => r.alignmentStatus === "RELEASE PENDING")
+          ? "🟡 Release Staged / Pending Deployment"
+          : "🟢 Fully Aligned"
+      } (${alignments.map((r) => `${r.repositoryName}: ${r.alignmentStatus}`).join(", ")})`
+    : ""
+}
+
+---
+
+## 🔄 Production Repository Alignment
+${
+  alignments.length > 0
+    ? alignments
+        .map(
+          (r) =>
+            `- **${r.repositoryName}**: ${r.alignmentStatus} (Trunk: ${r.trunkVersion}, Release: ${r.releaseVersion}, Prod: ${r.productionVersion}, Delta: ${r.commitsAheadReleaseVsProd > 0 ? `+${r.commitsAheadReleaseVsProd} commits` : "Synced"})`,
+        )
+        .join("\n")
+    : "No direct repository alignment constraints."
+}
 
 ---
 

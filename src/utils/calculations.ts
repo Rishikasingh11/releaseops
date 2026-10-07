@@ -7,6 +7,7 @@ import type {
   KubernetesNode,
   Release,
   Risk,
+  ProductionRepositoryAlignment,
 } from "../types";
 
 const severityWeight: Record<Risk["severity"], number> = {
@@ -80,9 +81,18 @@ export function isApprovalOverdue(approval: Approval): boolean {
 const pluralize = (count: number, noun: string, plural = `${noun}s`) =>
   `${count} ${count === 1 ? noun : plural}`;
 
+export interface ReadinessFactor {
+  id: "jira" | "kubernetes" | "approvals" | "dependencies" | "alignment";
+  name: string;
+  status: "passed" | "warning" | "failed";
+  summary: string;
+}
+
 export interface ReadinessBreakdown {
   score: number;
   blockers: string[];
+  factors: ReadinessFactor[];
+  recommendation: string;
 }
 
 /**
@@ -97,6 +107,7 @@ export function getReadinessBreakdown(
   dependencies: Dependency[],
   nodes: KubernetesNode[],
   freezeWindows: FreezeWindow[] = [],
+  alignments: ProductionRepositoryAlignment[] = [],
 ): ReadinessBreakdown {
   const blockers: string[] = [];
   let score = 100;
@@ -171,9 +182,95 @@ export function getReadinessBreakdown(
     );
   }
 
+  // Factor 5: Production-to-Repository Alignment
+  let alignmentFactorStatus: ReadinessFactor["status"] = "passed";
+  let alignmentSummary = "All associated repositories aligned with Production";
+
+  if (alignments.length > 0) {
+    const divergedRepo = alignments.find((r) => r.alignmentStatus === "DIVERGED");
+    const attentionRepo = alignments.find((r) => r.alignmentStatus === "ATTENTION REQUIRED");
+    const pendingRepo = alignments.find(
+      (r) => r.alignmentStatus === "RELEASE PENDING" || r.alignmentStatus === "BEHIND",
+    );
+
+    if (divergedRepo) {
+      score -= 15;
+      alignmentFactorStatus = "failed";
+      alignmentSummary = `Production Alignment: ${divergedRepo.repositoryName} has unexpected divergence between Production and the Release branch.`;
+      blockers.push(alignmentSummary);
+    } else if (attentionRepo) {
+      score -= 12;
+      alignmentFactorStatus = "warning";
+      alignmentSummary = `Production Alignment: ${attentionRepo.repositoryName} is significantly behind Release branch (${attentionRepo.commitsAheadReleaseVsProd} commits).`;
+      blockers.push(alignmentSummary);
+    } else if (pendingRepo) {
+      score -= 8;
+      alignmentFactorStatus = "warning";
+      alignmentSummary = `Production Alignment: ${pendingRepo.repositoryName} release ${pendingRepo.releaseVersion} is awaiting deployment to Production.`;
+      blockers.push(alignmentSummary);
+    }
+  }
+
+  // Construct factor checklists
+  const factors: ReadinessFactor[] = [
+    {
+      id: "jira",
+      name: "Jira",
+      status: blockedIssues.length > 0 ? "failed" : "passed",
+      summary: blockedIssues.length > 0 ? `${pluralize(blockedIssues.length, "blocking issue")}` : "No blocking issues",
+    },
+    {
+      id: "kubernetes",
+      name: "Kubernetes",
+      status: criticalNodes.length > 0 ? "failed" : nodes.some((n) => n.status === "Warning") ? "warning" : "passed",
+      summary: criticalNodes.length > 0 ? `${pluralize(criticalNodes.length, "critical node")}` : "Infrastructure healthy",
+    },
+    {
+      id: "approvals",
+      name: "Approvals",
+      status: overdueApprovals.length > 0 ? "failed" : pendingApprovals.length > 0 ? "warning" : "passed",
+      summary: overdueApprovals.length > 0
+        ? `${pluralize(overdueApprovals.length, "overdue approval")}`
+        : pendingApprovals.length > 0
+        ? `${pluralize(pendingApprovals.length, "approval")} pending`
+        : "All required approvals complete",
+    },
+    {
+      id: "dependencies",
+      name: "Dependencies",
+      status: unresolvedDependencies.length > 0 ? "warning" : "passed",
+      summary: unresolvedDependencies.length > 0 ? `${pluralize(unresolvedDependencies.length, "pending dependency")}` : "Resolved",
+    },
+    {
+      id: "alignment",
+      name: "Production Alignment",
+      status: alignmentFactorStatus,
+      summary: alignments.length === 0 ? "No repository alignment constraints" : alignmentSummary,
+    },
+  ];
+
+  // Construct explainable recommendation
+  let recommendation = "Release is on track and ready for deployment.";
+  const divergedRepo = alignments.find((r) => r.alignmentStatus === "DIVERGED");
+  const pendingRepo = alignments.find((r) => r.alignmentStatus === "RELEASE PENDING" || r.alignmentStatus === "BEHIND");
+
+  if (divergedRepo) {
+    recommendation = `Investigate ${divergedRepo.repositoryName} divergence before approving production deployment.`;
+  } else if (pendingRepo) {
+    recommendation = `Release can proceed, but ${pendingRepo.repositoryName} has a pending Production deployment.`;
+  } else if (blockedIssues.length > 0) {
+    recommendation = `Resolve blocked Jira issue ${blockedIssues[0].key} before release cut.`;
+  } else if (criticalNodes.length > 0) {
+    recommendation = `Restore healthy status on critical Kubernetes nodes before deploying.`;
+  } else if (pendingApprovals.length > 0) {
+    recommendation = `Obtain remaining ${pendingApprovals[0].type} approval to proceed.`;
+  }
+
   return {
     score: Math.max(0, Math.min(100, Math.round(score))),
     blockers,
+    factors,
+    recommendation,
   };
 }
 

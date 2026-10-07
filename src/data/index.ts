@@ -9,3 +9,4 @@ export * from "./notes";
 export * from "./approvals";
 export * from "./mails";
 export * from "./freezeWindows";
+export * from "./productionAlignments";

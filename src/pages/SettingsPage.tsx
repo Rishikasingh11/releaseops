@@ -142,7 +142,7 @@ export function SettingsPage() {
               </h2>
             </div>
             <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-              ReleaseOps persists your state in your local browser session. You can reset to initial seed data anytime.
+              ReleaseOps operates entirely in-memory for this session. A browser refresh or clicking below resets all state to original seed data.
             </p>
             <button
               type="button"

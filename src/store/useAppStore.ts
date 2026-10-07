@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type {
   Activity,
   Approval,
@@ -18,6 +17,7 @@ import type {
   Risk,
   FreezeWindow,
   Persona,
+  ProductionRepositoryAlignment,
 } from "../types";
 import { PERSONAS } from "../types/persona";
 import {
@@ -33,8 +33,12 @@ import {
   approvals as seedApprovals,
   mails as seedMails,
   freezeWindows as seedFreezeWindows,
+  productionAlignments as seedProductionAlignments,
 } from "../data";
 import { getDeploymentBlockers } from "../utils/calculations";
+
+// Helper to ensure in-memory state always starts with pristine cloned seed data
+const clone = <T>(val: T): T => JSON.parse(JSON.stringify(val));
 
 const RELEASE_FLOW: ReleaseStatus[] = [
   "In Progress",
@@ -81,6 +85,7 @@ interface AppState {
   approvals: Approval[];
   mails: Mail[];
   freezeWindows: FreezeWindow[];
+  productionAlignments: ProductionRepositoryAlignment[];
 
   updateRelease: (releaseId: string, changes: Partial<Release>) => void;
   createRelease: (input: NewReleaseInput) => Release;
@@ -103,6 +108,11 @@ interface AppState {
   addFreezeWindow: (window: Omit<FreezeWindow, "id">) => void;
   toggleFreezeWindow: (id: string) => void;
   deleteFreezeWindow: (id: string) => void;
+  updateProductionAlignment: (
+    repoId: string,
+    changes: Partial<ProductionRepositoryAlignment>,
+  ) => void;
+  simulateDeployRelease: (repoId: string) => void;
   resetToSeedData: () => void;
 }
 
@@ -131,34 +141,33 @@ function attachActivityToReleases(releases: Release[], activities: Activity[]): 
   });
 }
 
-export const useAppStore = create<AppState>()(
-  persist(
-    (set, get) => ({
-      currentUser: PERSONAS[0],
-      switchPersona: (personaId: string) => {
-        const persona = PERSONAS.find((p) => p.id === personaId) ?? PERSONAS[0];
-        set({ currentUser: persona });
-      },
+export const useAppStore = create<AppState>()((set, get) => ({
+  currentUser: PERSONAS[0],
+  switchPersona: (personaId: string) => {
+    const persona = PERSONAS.find((p) => p.id === personaId) ?? PERSONAS[0];
+    set({ currentUser: persona });
+  },
 
-      isMobileSidebarOpen: false,
-      toggleMobileSidebar: () =>
-        set((state) => ({ isMobileSidebarOpen: !state.isMobileSidebarOpen })),
-      closeMobileSidebar: () => set({ isMobileSidebarOpen: false }),
-      isDarkMode: false,
-      toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
+  isMobileSidebarOpen: false,
+  toggleMobileSidebar: () =>
+    set((state) => ({ isMobileSidebarOpen: !state.isMobileSidebarOpen })),
+  closeMobileSidebar: () => set({ isMobileSidebarOpen: false }),
+  isDarkMode: false,
+  toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
 
-      releases: seedReleases,
-      jiraIssues: seedJiraIssues,
-      kubernetesClusters: seedClusters,
-      kubernetesNodes: seedNodes,
-      releasePackages: seedPackages,
-      dependencies: seedDependencies,
-      risks: seedRisks,
-      activities: seedActivities,
-      releaseNotes: seedNotes,
-      approvals: seedApprovals,
-      mails: seedMails,
-      freezeWindows: seedFreezeWindows,
+  releases: clone(seedReleases),
+  jiraIssues: clone(seedJiraIssues),
+  kubernetesClusters: clone(seedClusters),
+  kubernetesNodes: clone(seedNodes),
+  releasePackages: clone(seedPackages),
+  dependencies: clone(seedDependencies),
+  risks: clone(seedRisks),
+  activities: clone(seedActivities),
+  releaseNotes: clone(seedNotes),
+  approvals: clone(seedApprovals),
+  mails: clone(seedMails),
+  freezeWindows: clone(seedFreezeWindows),
+  productionAlignments: clone(seedProductionAlignments),
 
       updateRelease: (releaseId, changes) =>
         set((state) => ({
@@ -426,42 +435,58 @@ export const useAppStore = create<AppState>()(
           freezeWindows: state.freezeWindows.filter((w) => w.id !== id),
         })),
 
+      updateProductionAlignment: (repoId, changes) =>
+        set((state) => ({
+          productionAlignments: state.productionAlignments.map((repo) =>
+            repo.repositoryId === repoId ? { ...repo, ...changes } : repo,
+          ),
+        })),
+
+      simulateDeployRelease: (repoId) => {
+        set((state) => {
+          const target = state.productionAlignments.find((r) => r.repositoryId === repoId);
+          if (!target) return state;
+          const updatedRepos = state.productionAlignments.map((repo) => {
+            if (repo.repositoryId !== repoId) return repo;
+            return {
+              ...repo,
+              productionVersion: repo.releaseVersion,
+              productionCommit: repo.releaseCommit,
+              releaseStatus: "Deployed" as const,
+              alignmentStatus: "ALIGNED" as const,
+              commitsAheadReleaseVsProd: 0,
+              commitsAhead: 0,
+              commitsAheadTrunkVsProd: repo.commitsAheadTrunkVsRelease,
+              lastProductionDeployment: "Just now",
+              deploymentDate: new Date().toISOString().replace("T", " ").substring(0, 19) + " UTC",
+              deployedBy: `${state.currentUser.name} (${state.currentUser.role})`,
+              isDiverged: false,
+              divergenceReason: undefined,
+              explanation: `Production is fully aligned with Release ${repo.releaseVersion}. Deployed just now.`,
+              recommendation: "No action required. Repository is in optimal release health.",
+              changesNotInProduction: [],
+            };
+          });
+          return { productionAlignments: updatedRepos };
+        });
+      },
+
       resetToSeedData: () => {
         set({
           currentUser: PERSONAS[0],
-          releases: seedReleases,
-          jiraIssues: seedJiraIssues,
-          kubernetesClusters: seedClusters,
-          kubernetesNodes: seedNodes,
-          releasePackages: seedPackages,
-          dependencies: seedDependencies,
-          risks: seedRisks,
-          activities: seedActivities,
-          releaseNotes: seedNotes,
-          approvals: seedApprovals,
-          mails: seedMails,
-          freezeWindows: seedFreezeWindows,
+          releases: clone(seedReleases),
+          jiraIssues: clone(seedJiraIssues),
+          kubernetesClusters: clone(seedClusters),
+          kubernetesNodes: clone(seedNodes),
+          releasePackages: clone(seedPackages),
+          dependencies: clone(seedDependencies),
+          risks: clone(seedRisks),
+          activities: clone(seedActivities),
+          releaseNotes: clone(seedNotes),
+          approvals: clone(seedApprovals),
+          mails: clone(seedMails),
+          freezeWindows: clone(seedFreezeWindows),
+          productionAlignments: clone(seedProductionAlignments),
         });
       },
-    }),
-    {
-      name: "releaseops_store_v1",
-      partialize: (state) => ({
-        releases: state.releases,
-        jiraIssues: state.jiraIssues,
-        kubernetesClusters: state.kubernetesClusters,
-        kubernetesNodes: state.kubernetesNodes,
-        releasePackages: state.releasePackages,
-        dependencies: state.dependencies,
-        risks: state.risks,
-        activities: state.activities,
-        releaseNotes: state.releaseNotes,
-        approvals: state.approvals,
-        mails: state.mails,
-        freezeWindows: state.freezeWindows,
-        isDarkMode: state.isDarkMode,
-        currentUser: state.currentUser,
-      }),
-    },
-  ),
-);
+    }));

@@ -7,7 +7,15 @@ import {
   type RiskAssessment,
 } from "../utils/calculations";
 import { getRecommendedActions } from "../utils/aiInsights";
-import type { Approval, Dependency, JiraIssue, KubernetesNode, Release, Risk } from "../types";
+import type {
+  Approval,
+  Dependency,
+  JiraIssue,
+  KubernetesNode,
+  Release,
+  Risk,
+  ProductionRepositoryAlignment,
+} from "../types";
 
 /**
  * Selects the raw, stable array references from the store (each is only a
@@ -27,6 +35,7 @@ export function useReleaseWorkspace(releaseId: string | undefined) {
   const releaseNotes = useAppStore((state) => state.releaseNotes);
   const kubernetesClusters = useAppStore((state) => state.kubernetesClusters);
   const kubernetesNodes = useAppStore((state) => state.kubernetesNodes);
+  const productionAlignments = useAppStore((state) => state.productionAlignments);
 
   return useMemo(() => {
     const release = releases.find((r) => r.id === releaseId);
@@ -42,6 +51,7 @@ export function useReleaseWorkspace(releaseId: string | undefined) {
         notes: [],
         clusters: [],
         nodes: [],
+        alignments: [],
       };
     }
 
@@ -70,6 +80,11 @@ export function useReleaseWorkspace(releaseId: string | undefined) {
     const scopedNodes = kubernetesNodes.filter((node) =>
       release.clusterIds.includes(node.clusterId),
     );
+    const scopedAlignments = productionAlignments.filter(
+      (repo) =>
+        (release.repositoryIds && release.repositoryIds.includes(repo.repositoryId)) ||
+        repo.releaseId === release.id,
+    );
 
     return {
       release,
@@ -82,6 +97,7 @@ export function useReleaseWorkspace(releaseId: string | undefined) {
       notes: scopedNotes,
       clusters: scopedClusters,
       nodes: scopedNodes,
+      alignments: scopedAlignments,
     };
   }, [
     releaseId,
@@ -95,6 +111,7 @@ export function useReleaseWorkspace(releaseId: string | undefined) {
     releaseNotes,
     kubernetesClusters,
     kubernetesNodes,
+    productionAlignments,
   ]);
 }
 
@@ -105,6 +122,7 @@ export interface ReleaseIntelligence {
   risks: Risk[];
   dependencies: Dependency[];
   nodes: KubernetesNode[];
+  alignments: ProductionRepositoryAlignment[];
   readiness: ReadinessBreakdown;
   risk: RiskAssessment;
   actions: string[];
@@ -124,6 +142,7 @@ export function useReleaseIntelligence(): ReleaseIntelligence[] {
   const risks = useAppStore((state) => state.risks);
   const kubernetesNodes = useAppStore((state) => state.kubernetesNodes);
   const freezeWindows = useAppStore((state) => state.freezeWindows);
+  const productionAlignments = useAppStore((state) => state.productionAlignments);
 
   return useMemo(() => {
     return releases.map((release) => {
@@ -140,6 +159,11 @@ export function useReleaseIntelligence(): ReleaseIntelligence[] {
       const scopedNodes = kubernetesNodes.filter((node) =>
         release.clusterIds.includes(node.clusterId),
       );
+      const scopedAlignments = productionAlignments.filter(
+        (repo) =>
+          (release.repositoryIds && release.repositoryIds.includes(repo.repositoryId)) ||
+          repo.releaseId === release.id,
+      );
 
       const readiness = getReadinessBreakdown(
         release,
@@ -149,6 +173,7 @@ export function useReleaseIntelligence(): ReleaseIntelligence[] {
         scopedDependencies,
         scopedNodes,
         freezeWindows,
+        scopedAlignments,
       );
       const risk = getRiskAssessment(
         release,
@@ -174,10 +199,20 @@ export function useReleaseIntelligence(): ReleaseIntelligence[] {
         risks: scopedRisks,
         dependencies: scopedDependencies,
         nodes: scopedNodes,
+        alignments: scopedAlignments,
         readiness,
         risk,
         actions,
       };
     });
-  }, [releases, jiraIssues, approvals, risks, dependencies, kubernetesNodes, freezeWindows]);
+  }, [
+    releases,
+    jiraIssues,
+    approvals,
+    risks,
+    dependencies,
+    kubernetesNodes,
+    freezeWindows,
+    productionAlignments,
+  ]);
 }

@@ -74,4 +74,5 @@ export interface Release {
   noteIds: string[];
   clusterIds: string[];
   aiSummary: string;
+  repositoryIds?: string[];
 }

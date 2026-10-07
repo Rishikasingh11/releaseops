@@ -37,8 +37,18 @@ export function ReleaseDetailPage() {
     );
   }
 
-  const { release, jiraIssues, packages, dependencies, approvals, risks, activities, notes, nodes } =
-    workspace;
+  const {
+    release,
+    jiraIssues,
+    packages,
+    dependencies,
+    approvals,
+    risks,
+    activities,
+    notes,
+    nodes,
+    alignments,
+  } = workspace;
 
   return (
     <div>
@@ -49,6 +59,7 @@ export function ReleaseDetailPage() {
         approvals={approvals}
         risks={risks}
         packages={packages}
+        alignments={alignments}
       />
 
       <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
@@ -70,6 +81,7 @@ export function ReleaseDetailPage() {
             approvals={approvals}
             risks={risks}
             nodes={nodes}
+            alignments={alignments}
           />
         </div>
         <div hidden={activeTab !== "Jira"}>

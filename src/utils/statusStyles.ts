@@ -6,6 +6,7 @@ import type {
   ReleasePackage,
   ReleaseStatus,
   RiskSeverity,
+  AlignmentStatus,
 } from "../types";
 
 const badge = (classes: string) => classes;
@@ -53,6 +54,14 @@ export const riskLevelSolidStyles: Record<RiskSeverity, string> = {
   Critical: badge("bg-red-600 text-white border-red-600"),
 };
 
+export const alignmentStatusStyles: Record<AlignmentStatus, string> = {
+  ALIGNED: badge("bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"),
+  "RELEASE PENDING": badge("bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800"),
+  BEHIND: badge("bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800"),
+  DIVERGED: badge("bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"),
+  "ATTENTION REQUIRED": badge("bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800"),
+};
+
 /**
  * Statuses severe enough to warrant the extra visual weight of a leading
  * dot indicator on their badge — used so "At Risk", "Blocked", "Critical"
@@ -63,6 +72,7 @@ export const urgentJiraStatuses = new Set<JiraStatus>(["Blocked"]);
 export const urgentNodeStatuses = new Set<NodeStatus>(["Critical"]);
 export const urgentRiskSeverities = new Set<RiskSeverity>(["Critical"]);
 export const urgentApprovalStatuses = new Set<ApprovalStatus>(["Rejected"]);
+export const urgentAlignmentStatuses = new Set<AlignmentStatus>(["DIVERGED", "ATTENTION REQUIRED"]);
 
 export const packageStatusStyles: Record<ReleasePackage["status"], string> = {
   Pending: badge("bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600"),
